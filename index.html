@@ -1,0 +1,294 @@
+  <!-- Hand-drawn font for zoom controls -->
+  <link href="https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap" rel="stylesheet">
+    /* Custom Leaflet Controls - D&D Style */
+    .leaflet-control-zoom, .leaflet-control-layers {
+      background: transparent !important;
+      box-shadow: none !important;
+      border: none !important;
+    }
+    .leaflet-control-zoom-in, .leaflet-control-zoom-out {
+      background: transparent !important;
+      border: none !important;
+      font-size: 2.2em !important;
+      color: #6b4b1a !important;
+      font-family: 'Rock Salt', cursive;
+      text-shadow: 1px 1px 0 #e2cfa5;
+      width: 44px;
+      height: 44px;
+      line-height: 44px;
+      margin: 2px 0;
+      cursor: pointer;
+      border-radius: 50%;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .leaflet-control-zoom-in:hover, .leaflet-control-zoom-out:hover {
+      background: rgba(191, 167, 106, 0.15) !important;
+    }
+    .leaflet-control-zoom-in span,
+    .leaflet-control-zoom-out span {
+      display: block;
+      font-family: 'Rock Salt', cursive;
+      font-size: 1.2em;
+      font-weight: bold;
+      line-height: 1;
+    }
+    .leaflet-control-zoom-in::after,
+    .leaflet-control-zoom-out::after {
+      display: none;
+    }
+    .leaflet-control-layers-toggle {
+      background: none !important;
+      border: none !important;
+      width: 40px;
+      height: 40px;
+      background-image: url('https://upload.wikimedia.org/wikipedia/commons/5/55/Magnifying_glass_icon.svg');
+      background-size: 60% 60%;
+      background-repeat: no-repeat;
+      background-position: center;
+      filter: drop-shadow(1px 1px 0 #e2cfa5);
+      border-radius: 50%;
+      transition: background 0.2s;
+    }
+    .leaflet-control-layers-toggle:hover {
+      background-color: rgba(191, 167, 106, 0.15) !important;
+    }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>D&D Map Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    #map {
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      left: 0;
+      top: 0;
+      z-index: 1;
+    }
+    #info-panel {
+      width: 60vw;
+      height: 100vh;
+      position: absolute;
+      left: 0;
+      top: 0;
+      background: url('wooden-floor-background.jpg'), #f5ecd6; /* Aged paper texture, replace with your own if desired */
+      background-size: cover;
+      box-shadow: 4px 0 12px rgba(0,0,0,0.2);
+      padding: 32px 24px;
+      box-sizing: border-box;
+      font-family: 'IM Fell English', 'Georgia', serif;
+      color: #3e2c1a;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: flex-start;
+      z-index: 2;
+      display: flex;
+      transform: translateX(-100%);
+      transition: transform 0.4s cubic-bezier(.77,0,.18,1);
+      pointer-events: none;
+      opacity: 0;
+    }
+    #info-panel.open {
+      transform: translateX(0);
+      pointer-events: auto;
+      opacity: 1;
+    }
+    #info-panel h2 {
+      margin-top: 0;
+      font-size: 3em;
+      letter-spacing: 1px;
+      text-shadow: 1px 1px 0 #e2cfa5;
+    }
+    #info-panel img {
+      width: 80%;
+      max-width: 600px;
+      min-width: 120px;
+      border: 2px solid #bfa76a;
+      margin-bottom: 16px;
+      border-radius: 8px;
+      box-shadow: 2px 2px 8px #bfa76a55;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .place-header {
+      width: 100%;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .place-population {
+      font-size: 1.1em;
+      font-weight: bold;
+      margin-bottom: 12px;
+      color: #6b4b1a;
+      text-shadow: 1px 1px 0 #e2cfa5;
+      text-align: center;
+    }
+    .place-header {
+      width: 100%;
+      margin-bottom: 8px;
+    }
+    .place-population {
+      font-size: 1.1em;
+      font-weight: bold;
+      margin-bottom: 12px;
+      color: #6b4b1a;
+      text-shadow: 1px 1px 0 #e2cfa5;
+    }
+    .place-details-scroll {
+      width: 100%;
+      flex: 1 1 auto;
+      overflow-y: auto;
+      background: rgba(255,255,255,0.6);
+      border-radius: 8px;
+      padding: 12px;
+      box-sizing: border-box;
+      margin-top: 8px;
+      box-shadow: 0 0 4px #bfa76a33 inset;
+      max-height: 300px;
+    }
+    #info-panel .close-btn {
+      position: absolute;
+      right: 24px;
+      top: 24px;
+      background: #bfa76a;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      font-size: 1.2em;
+      cursor: pointer;
+      box-shadow: 1px 1px 4px #bfa76a55;
+    }
+    @media (max-width: 800px) {
+      #map { width: 100vw; }
+      #info-panel { display: none; }
+    }
+  </style>
+  <!-- Optional: D&D style font -->
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="map"></div>
+  <div id="info-panel" style="position:relative;">
+    <button class="close-btn" onclick="hideInfoPanel()">&times;</button>
+    <div class="place-header">
+      <h2 id="place-title">Place Name</h2>
+      <div id="place-population" class="place-population">Population: --</div>
+    </div>
+    <img id="place-image" src="https://i.imgur.com/1n6bZlF.jpg" alt="Place image" />
+    <div id="place-details-scroll" class="place-details-scroll">
+      <div id="place-details">
+        <p>Details about the place will appear here. Replace this with your own text and images!</p>
+      </div>
+    </div>
+  </div>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // Map image and size
+    const imageUrl = 'test map.jpg'; // Your map image
+    const imageWidth = 2000; // pixels
+    const imageHeight = 1500; // pixels
+
+    // Place data (add your own places here)
+    const places = [
+      {
+        name: "Feignlight Church",
+        population: "500,000 estimated",
+        coords: [1050, 650],
+        details: "Neverwinter is a bustling city known for its skilled craftsmen and beautiful gardens. It is often called the Jewel of the North.Neverwinter is a bustling city known for its skilled craftsmen and beautiful gardens. It is often called the Jewel of the North.Neverwinter is a bustling city known for its skilled craftsmen and beautiful gardens. It is often called the Jewel of the North.Neverwinter is a bustling city known for its skilled craftsmen and beautiful gardens. It is often called the Jewel of the North.Neverwinter is a bustling city known for its skilled craftsmen and beautiful gardens. It is often called the Jewel of the North.Neverwinter is a bustling city known for its skilled craftsmen and beautiful gardens. It is often called the Jewel of the North.",
+        image: "Detailed Feignlight Map (idk if obsolete or not).png" // Replace with your own
+      },
+      {
+        name: "Waterdeep",
+        population: "130,000",
+        coords: [900, 1200],
+        details: "Waterdeep, the City of Splendors, is the most influential and cosmopolitan city in the North.",
+        image: "https://i.imgur.com/8QfQ2vF.jpg" // Replace with your own
+      }
+    ];
+
+    // Set up the map
+    const map = L.map('map', {
+      crs: L.CRS.Simple,
+      minZoom: -2,
+      maxZoom: 2,
+      zoomSnap: 0.1,
+      zoomDelta: 0.5,
+      inertia: true,
+      inertiaDeceleration: 8000, // Increase for faster pan
+      inertiaMaxSpeed: 2000,     // Increase for faster pan
+      keyboardPanDelta: 200      // Arrow key pan speed
+    });
+
+    // Calculate the bounds for the image
+    const bounds = [[0,0], [imageHeight, imageWidth]];
+    L.imageOverlay(imageUrl, bounds).addTo(map);
+    map.fitBounds(bounds);
+
+    // Layer groups
+    const placeNames = L.layerGroup();
+    const placeMarkers = L.layerGroup();
+
+    // Add places to layers
+    places.forEach(place => {
+      // Place name marker with label
+      const nameMarker = L.marker(place.coords)
+        .bindTooltip(place.name, {permanent: true, direction: 'right'})
+        .on('click', () => showInfoPanel(place));
+      placeNames.addLayer(nameMarker);
+
+      // Place marker (icon only, no label)
+      const marker = L.marker(place.coords)
+        .on('click', () => showInfoPanel(place));
+      placeMarkers.addLayer(marker);
+    });
+
+    // Layer control
+    const baseMaps = {};
+    const overlayMaps = {
+      "Place Names": placeNames,
+      "Place Markers": placeMarkers
+    };
+    L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+    // Optionally, show both layers by default
+    placeNames.addTo(map);
+    placeMarkers.addTo(map);
+
+    // Info panel logic
+    function showInfoPanel(place) {
+      const infoPanel = document.getElementById('info-panel');
+      infoPanel.classList.add('open');
+      infoPanel.style.zIndex = 2;
+      document.getElementById('place-title').textContent = place.name;
+      document.getElementById('place-population').textContent = `Population: ${place.population || '--'}`;
+      document.getElementById('place-details').innerHTML = `<p>${place.details}</p>`;
+      document.getElementById('place-image').src = place.image;
+    }
+    function hideInfoPanel() {
+      document.getElementById('info-panel').classList.remove('open');
+    }
+
+    // Optional: Hide info panel when clicking outside it (on the map)
+    map.on('click', function() {
+      hideInfoPanel();
+    });
+  </script>
+</body>
+</html>
